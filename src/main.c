@@ -79,7 +79,7 @@
 #include "console.h"
 #include "fft.h"
 #include "envelope.h"
-#include "radio_init_service.h"
+#include "radio_callback.h"
 #include "comms.h"
 #include "sleeping.h"
 #include "led.h"
@@ -135,7 +135,7 @@ int main(void) {
   while (i-- > 0);
 
   /* Initialise the radio stack */
-  radio_init();
+  radio_init(radio_rx_callback);
   /* Initialise the time */
   time_init();
 

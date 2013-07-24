@@ -25,7 +25,6 @@
 #include "LPC11xx.h"
 #include <stdlib.h>
 #include "mem/flash.h"
-#include "radio/rf212_functions.h"
 #include "spi.h"
 #include "debug.h"
 

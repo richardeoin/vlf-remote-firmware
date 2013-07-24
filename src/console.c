@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "console.h"
-#include "radio/rf212.h"
 #include "radio/radio.h"
 
 static uint8_t console_buf[CONSOLE_BUF_LEN];
@@ -34,7 +33,7 @@ static uint8_t console_buf_index = 1;
 
 void _console_flush(void) {
   /* Write out the data that's in the buffer */
-  radif_query(console_buf, console_buf_index, BASE_STATION_ADDR, 1, &rf212_radif);
+  radio_transmit(console_buf, console_buf_index, BASE_STATION_ADDR, 1);
   /* And go back to the start of the buffer */
   console_buf_index = 1;
 }

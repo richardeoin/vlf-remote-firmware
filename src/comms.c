@@ -23,7 +23,6 @@
  */
 
 #include "LPC11xx.h"
-#include "radio/rf212.h"
 #include "radio/radio.h"
 #include "console.h"
 #include "sleeping.h"
@@ -42,13 +41,14 @@ uint16_t time_update_counter = 0xFFFF;
 
 void comms(void) {
   /* Wake up the radio */
-  radif_command(RADIF_WAKE, &rf212_radif);
+  radio_wake();
 
   /* If we need to try to update the time */
   if (++time_update_counter >= TIME_UPDATE_INTERVAL) {
     time_update_counter = 0;
+
     /* Get the time */
-    radif_query((uint8_t*)"T\n\0", 3, BASE_STATION_ADDR, 1, &rf212_radif);
+    radio_transmit((uint8_t*)"T\n\0", 3, BASE_STATION_ADDR, 1);
   }
 
   upload();
@@ -56,5 +56,5 @@ void comms(void) {
   console_printf("Going to Sleep!\n");
 
   /* Put the radio back to sleep */
-  radif_command(RADIF_SLEEP, &rf212_radif);
+  radio_sleep();
 }

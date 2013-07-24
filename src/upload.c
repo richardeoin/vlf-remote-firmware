@@ -23,7 +23,6 @@
  */
 
 #include "upload.h"
-#include "radio/rf212.h"
 #include "radio/radio.h"
 #include "mem/btree.h"
 #include "mem/flash.h"
@@ -66,9 +65,9 @@ void do_upload(uint32_t record_addr, uint32_t leaf_addr, uint8_t ack) {
   /* Read the record into the frame from memory */
   ReadFlash(record_addr, upload_frame_buffer + HEADER_SIZE, RECORD_SIZE);
 
-  /* Transmit the upload_frame */
-  radif_query(upload_frame_buffer, HEADER_SIZE + RECORD_SIZE,
-	      BASE_STATION_ADDR, ack, &rf212_radif);
+  /* Transmit the upload frame */
+  radio_transmit(upload_frame_buffer, HEADER_SIZE + RECORD_SIZE,
+	      BASE_STATION_ADDR, ack);
 }
 
 /**
@@ -91,7 +90,7 @@ void upload(void) {
     if (records_done_this_upload < UPLOADS_WITHOUT_ACK) {
       do_upload(upload_addr, leaf_marker, 1);
     } else {
-      if (rf212_radif.last_trac_status == TRAC_NO_ACK) { break; }
+      if (radio_get_trac_status() == TRAC_NO_ACK) { break; }
       do_upload(upload_addr, leaf_marker, 0);
     }
   } while (++records_done_this_upload < MAX_UPLOADS_AT_ONCE);

@@ -24,7 +24,6 @@
 
 #include "LPC11xx.h"
 #include "audio/sampling.h"
-#include "radio/rf212_functions.h"
 #include "audio/wm8737.h"
 #include "spi.h"
 #include "debug.h"

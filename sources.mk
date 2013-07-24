@@ -2,14 +2,11 @@ SOURCES += src/comms.c \
 src/debug.c \
 src/sleeping.c \
 src/spi.c \
-src/radio/ieee_frame.c \
-src/radio/rf212_functions.c \
 src/radio/radio.c \
-src/radio/rf212.c \
-src/radio/radio_functions.c \
+src/radio/at86rf212.c \
 src/pwrmon.c \
 src/main.c \
-src/radio_init_service.c \
+src/radio_callback.c \
 src/audio/wm8737.c \
 src/audio/i2c.c \
 src/audio/sampling.c \
