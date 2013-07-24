@@ -72,6 +72,7 @@
 #include "mem/flash.h"
 #include "mem/wipe_mem.h"
 #include "mem/write.h"
+#include "radio/radio.h"
 #include "spi.h"
 #include "debug.h"
 #include "pwrmon.h"
