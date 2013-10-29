@@ -55,17 +55,17 @@ void pwrmon_start(pwrmon_done_func _callback) {
   callback = _callback;
 
   /* Disable the power down bit to the ADC block. */
-  LPC_SYSCON->PDRUNCFG &= ~(1<<4);
+  LPC_SYSCON->PDRUNCFG &= ~(1 << 4);
 
   /* Enable AHB clock to the ADC. */
-  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<13);
+  LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 13);
 
   /* Configure the IO Pins for AD7 */
   LPC_IOCON->PIO1_11 &= ~0x9F; /* 0xx00000 - Mode GPIO, No Pull Up/Down, Analogue Mode */
   LPC_IOCON->PIO1_11 |= 0x01;  /* xxxxxxx1 - Mode AD7 */
 
   /* Set the clock on the ADC Block  (must be < 4.5MHz) */
-  LPC_ADC->CR = ((8-1)<<8);	/* Divide PCLK by 8 */
+  LPC_ADC->CR = ((8-1) << 8);	/* Divide PCLK by 8 */
 
   /* Enable Interrupts */
   NVIC_SetPriority(ADC_IRQn, 2);
@@ -89,10 +89,10 @@ void pwrmon_done(void) {
   NVIC_DisableIRQ(ADC_IRQn);
 
   /* Disable AHB clock to the ADC. */
-  LPC_SYSCON->SYSAHBCLKCTRL &= ~(1<<13);
+  LPC_SYSCON->SYSAHBCLKCTRL &= ~(1 << 13);
 
   /* And power down the ADC. */
-  LPC_SYSCON->PDRUNCFG |= (1<<4);
+  LPC_SYSCON->PDRUNCFG |= (1 << 4);
 
   /* Make the callback */
   if (callback != NULL) {

@@ -41,10 +41,9 @@ void flash_init(void) {
   writeflash_active = WRITEFLASH_INACTIVE;
 
   /* Setup Chip Enable lines */
-  LPC_GPIO1->DIR |= (1<<6); /* Output */
-//LPC_GPIO1->DIR |= (1<<7); /* Output */
-  LPC_GPIO1->DIR |= (1<<8); /* Output */
+  LPC_GPIO1->DIR |= (1<<7); /* Output */
   LPC_GPIO2->DIR |= (1<<0); /* Output */
+  LPC_GPIO1->DIR |= (1<<8); /* Output */
   /* Deselect all chips */
   for (i = 0; i < 0x100; i++) { ChipSelectFlash(i<<24, FLASH_SSEL_DISABLE); }
 
@@ -55,13 +54,13 @@ void flash_init(void) {
 
 /* -------- CHIP IDENTIFICATION AND ENUMERATION -------- */
 
-void flash_setup() {
-  uint16_t i; uint32_t total_mem = 0;
+void flash_setup(void) {
+  uint32_t i; uint32_t total_mem = 0;
 
   SetFlashReset(1); /* Take the chips out of reset */
 
-  for (i = 0; i < 0x100; i ++) {
-    struct flashinfo info = ReadChipInfo(i<<24);
+  for (i = 0; i < 0x100; i++) {
+    struct flashinfo info = ReadChipInfo(i << 24);
     /* Print the size and some debug information */
     total_mem += (flash_sizes[i] = IdentifyChip(info, i));
   }
@@ -70,11 +69,11 @@ void flash_setup() {
 }
 
 uint32_t IdentifyChip(struct flashinfo info, uint16_t num) {
-  if (num == 2 || num == 3) { return 0; }
+
   if (info.man_id == 0 || info.man_id == 0xFF) {
     /* Ignore empty sockets */
   } else {
-    debug_printf("Socket %d: ", num);
+    debug_printf("Socket %d: ", num+1);
 
     if (info.man_id == 0xBF) { // SST
       debug_printf("SST ");
@@ -462,6 +461,8 @@ void ChipSelectFlash(uint32_t address, uint8_t state) {
   uint8_t value = (state == FLASH_SSEL_ENABLE) ? 0 : 1;
 
   if (state == FLASH_SSEL_ENABLE) {
+    __disable_irq();
+
     /* Use the SPI bus for flash. */
     flash_spi_init();
   }
@@ -469,15 +470,12 @@ void ChipSelectFlash(uint32_t address, uint8_t state) {
   /* The top 8 bits of the address are the chip specifier */
   switch (address & 0xFF000000) {
     case 0x00000000:
-      //LPC_GPIO1->MASKED_ACCESS[1<<7] = (value<<7);
+      LPC_GPIO1->MASKED_ACCESS[1<<7] = (value<<7);
       break;
     case 0x01000000:
-      LPC_GPIO1->MASKED_ACCESS[1<<6] = (value<<6);
-      break;
-    case 0x02000000:
       LPC_GPIO2->MASKED_ACCESS[1<<0] = (value<<0);
       break;
-    case 0x03000000:
+    case 0x02000000:
       LPC_GPIO1->MASKED_ACCESS[1<<8] = (value<<8);
       break;
     default: break;
@@ -486,5 +484,7 @@ void ChipSelectFlash(uint32_t address, uint8_t state) {
   if (state != FLASH_SSEL_ENABLE) {
     /* Revert the SPI bus to working for the radio. */
     radio_spi_init();
+
+    __enable_irq();
   }
 }

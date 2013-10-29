@@ -39,8 +39,8 @@
  */
 
 // -8dB = 0xB3, 0dB = 0xC3, 8db = 0xD3, 16dB = 0xE3, 24dB = 0xF3, 30dB = 0xFF
-#define LEFT_PGA_GAIN		0xBB 	/*  -4 dB */
-#define RIGHT_PGA_GAIN		0xBB	/*  -4 dB */
+#define LEFT_PGA_GAIN		0xE3 	/*   16 dB */
+#define RIGHT_PGA_GAIN		0xE3	/*   16 dB */
 #define LEFT_MICBOOST		0	/* +33 dB */
 #define RIGHT_MICBOOST		0	/* +33 dB */
 

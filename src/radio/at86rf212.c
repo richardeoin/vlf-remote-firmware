@@ -377,7 +377,7 @@ uint8_t at86rf212_reset(struct radif* radif) {
 	 (at86rf212_reg_read(PART_NUM, radif) != AT86RF212_PART_NUM)) {
     if (i++ > 100) {
       /* This is never going to work, we've got the wrong part number */
-      return RADIO_UNSUPPORTED_DEVICE;
+//      return RADIO_UNSUPPORTED_DEVICE;
     }
   }
 
@@ -430,6 +430,100 @@ void at86rf212_startup(struct radif* radif) {
 
 /* -------- Transmit & Receive -------- */
 
+/**
+ * Called when the radio has finished receiving a frame.
+ */
+void at86rf212_rx(struct radif* radif) { 
+  uint8_t data[0x80], length, energy_detect, crc_status;
+  uint16_t source_address, destination_address;
+ 
+  /* Get the ED measurement */
+  energy_detect = at86rf212_reg_read(PHY_ED_LEVEL, radif);
+
+  /* Find out if the CRC on the last received packet was valid */
+  crc_status = (at86rf212_reg_read(PHY_RSSI, radif) & (1<<7)) ? 1 : 0;
+  
+  radif->enter_protected();
+  radif->spi_start();
+
+  /* Send frame read command */
+  radif->spi_xfer(RADIO_SPI_CMD_FR);
+
+  /* Read the length of the whole frame */
+  uint8_t mpdu_len = radif->spi_xfer(BLANK_SPI_CHARACTER);
+
+  /* Frame Control Field (FCF) */
+  uint16_t fcf = at86rf212_read16(radif);
+  /* Decode the FCF */
+  uint8_t pan_id_compression = (fcf & FCF_PAN_ID_COMPRESSION);
+  uint8_t dest_addr_mode = (fcf >> 10) & 0x3;
+  uint8_t frame_version = (fcf >> 12) & 0x3;
+  uint8_t src_addr_mode = (fcf >> 14) & 0x3;
+
+  /* Sequence Number */
+  uint8_t rx_sequence = radif->spi_xfer(BLANK_SPI_CHARACTER);
+
+  /* Keep track for how many bytes we've read from this point on */
+  uint8_t hdr_len = 3;
+
+  if (dest_addr_mode == FRAME_PAN_ID_16BIT_ADDR) {
+    at86rf212_read16(radif); /* PAN ID */
+    destination_address = at86rf212_read16(radif); /* Destination Address */
+    hdr_len += 4;
+  } else if (dest_addr_mode == FRAME_PAN_ID_64BIT_ADDR) {
+    at86rf212_read16(radif); /* PAN ID */
+    hdr_len += 2;
+    /* TODO */
+  }
+
+  if (src_addr_mode == FRAME_PAN_ID_16BIT_ADDR) {
+    if (pan_id_compression) {
+      /* TODO */
+    } else {
+      at86rf212_read16(radif); /* PAN ID */
+      hdr_len += 2;
+    }
+    source_address = at86rf212_read16(radif); /* Source Address */
+    hdr_len += 2;
+  } else if (src_addr_mode == FRAME_PAN_ID_64BIT_ADDR) {
+    if (pan_id_compression) {
+      /* TODO */
+    } else {
+      at86rf212_read16(radif); /* PAN ID */
+      hdr_len += 2;
+    }
+    /* TODO */
+  }
+
+  /* TODO: Possible Security Header */
+
+  /* Things we didn't use */
+  UNUSED(rx_sequence);
+  UNUSED(frame_version);
+  UNUSED(destination_address);
+  UNUSED(crc_status);
+
+  /* Work out how long the actual data is */
+  length = mpdu_len - (hdr_len + 2);
+
+  /* Read in the MAC Service Data Unit */
+  uint8_t i;
+  for (i = 0; i < length; i++) {
+    data[i] = radif->spi_xfer(BLANK_SPI_CHARACTER);
+  }
+  data[i] = 0; /* Null terminator */
+
+  /* We don't bother reading in the Frame Check Sequence */
+
+  radif->spi_stop();
+  radif->exit_protected();
+
+  /* Increment the statistics */
+  radif->rx_success_count++;
+
+  /* Make a callback with the received packet */
+  radif->rx_callback(data, length, energy_detect, source_address);
+}
 /**
  * Sends a frame
  */
@@ -532,108 +626,17 @@ void at86rf212_tx_end(struct radif* radif) {
 
 #if QUERY_MODE
   if (trac_status == TRAC_SUCCESS || trac_status == TRAC_SUCCESS_DATA_PENDING) {
+
     /* Wait for something to be received */
     while ((at86rf212_reg_read(IRQ_STATUS, radif) & RADIO_IRQ_TRX_END) == 0) {
       if (i++ > QUERY_TIMEOUT*10) { return; }
       radif->delay_us(100);
     }
+
+    /* When it is, call the handler */
+    at86rf212_rx(radif);
   }
 #endif
-}
-
-/**
- * Called when the radio has finished receiving a frame.
- */
-void at86rf212_rx(struct radif* radif) { 
-  uint8_t data[0x80], length, energy_detect, crc_status;
-  uint16_t source_address, destination_address;
- 
-  /* Get the ED measurement */
-  energy_detect = at86rf212_reg_read(PHY_ED_LEVEL, radif);
-
-  /* Find out if the CRC on the last received packet was valid */
-  crc_status = (at86rf212_reg_read(PHY_RSSI, radif) & (1<<7)) ? 1 : 0;
-  
-  radif->enter_protected();
-  radif->spi_start();
-
-  /* Send frame read command */
-  radif->spi_xfer(RADIO_SPI_CMD_FR);
-
-  /* Read the length of the whole frame */
-  uint8_t mpdu_len = radif->spi_xfer(BLANK_SPI_CHARACTER);
-
-  /* Frame Control Field (FCF) */
-  uint16_t fcf = at86rf212_read16(radif);
-  /* Decode the FCF */
-  uint8_t pan_id_compression = (fcf & FCF_PAN_ID_COMPRESSION);
-  uint8_t dest_addr_mode = (fcf >> 10) & 0x3;
-  uint8_t frame_version = (fcf >> 12) & 0x3;
-  uint8_t src_addr_mode = (fcf >> 14) & 0x3;
-
-  /* Sequence Number */
-  uint8_t rx_sequence = radif->spi_xfer(BLANK_SPI_CHARACTER);
-
-  /* Keep track for how many bytes we've read from this point on */
-  uint8_t hdr_len = 3;
-
-  if (dest_addr_mode == FRAME_PAN_ID_16BIT_ADDR) {
-    at86rf212_read16(radif); /* PAN ID */
-    destination_address = at86rf212_read16(radif); /* Destination Address */
-    hdr_len += 4;
-  } else if (dest_addr_mode == FRAME_PAN_ID_64BIT_ADDR) {
-    at86rf212_read16(radif); /* PAN ID */
-    hdr_len += 2;
-    /* TODO */
-  }
-
-  if (src_addr_mode == FRAME_PAN_ID_16BIT_ADDR) {
-    if (pan_id_compression) {
-      /* TODO */
-    } else {
-      at86rf212_read16(radif); /* PAN ID */
-      hdr_len += 2;
-    }
-    source_address = at86rf212_read16(radif); /* Source Address */
-    hdr_len += 2;
-  } else if (src_addr_mode == FRAME_PAN_ID_64BIT_ADDR) {
-    if (pan_id_compression) {
-      /* TODO */
-    } else {
-      at86rf212_read16(radif); /* PAN ID */
-      hdr_len += 2;
-    }
-    /* TODO */
-  }
-
-  /* TODO: Possible Security Header */
-
-  /* Things we didn't use */
-  UNUSED(rx_sequence);
-  UNUSED(frame_version);
-  UNUSED(destination_address);
-  UNUSED(crc_status);
-
-  /* Work out how long the actual data is */
-  length = mpdu_len - (hdr_len + 2);
-
-  /* Read in the MAC Service Data Unit */
-  uint8_t i;
-  for (i = 0; i < length; i++) {
-    data[i] = radif->spi_xfer(BLANK_SPI_CHARACTER);
-  }
-  data[i] = 0; /* Null terminator */
-
-  /* We don't bother reading in the Frame Check Sequence */
-
-  radif->spi_stop();
-  radif->exit_protected();
-
-  /* Increment the statistics */
-  radif->rx_success_count++;
-
-  /* Make a callback with the received packet */
-  radif->rx_callback(data, length, energy_detect, source_address);
 }
 
 /* -------- Interrupt -------- */

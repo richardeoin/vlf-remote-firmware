@@ -48,16 +48,16 @@ void do_sampling(void) {
   wm8737_spi_init();
   wm8737_spi_on();
 
-  /* We need to use a function pointer to jump our execution to RAM */
-  sampling_func sampling_ptr = sampling;
-  /* Prepare for the sampling loop */
-  sampling_index = 0;
-
   /**
    *  Disable all interrupts - Be careful that the watchdog
    *  calibration timer doesn't occur during this period
    */
   __disable_irq();
+
+  /* We need to use a function pointer to jump our execution to RAM */
+  sampling_func sampling_ptr = sampling;
+  /* Prepare for the sampling loop */
+  sampling_index = 0;
 
   /* Let RAM accesses settle down before we jump */
   __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); __NOP();
@@ -69,11 +69,12 @@ void do_sampling(void) {
 
   LPC_GPIO0->MASKED_ACCESS[1<<2] = (1<<2); /* P0[2] = ADCLRCLK */
 
+  /* Tidy up from the sampling run */
+  spi_flush();
+
   /* Re-enable all interrupts */
   __enable_irq();
 
-  /* Tidy up from the sampling run */
-  spi_flush();
   /* Return the SPI to how it was before */
   wm8737_spi_off();
 
@@ -84,8 +85,8 @@ void do_sampling(void) {
 }
 void shutdown_sampling(void) {
   /* Cut the ADC clock and put it into standby */
-  wm8737_power_standby();
   wm8737_clock_off();
+  wm8737_power_standby();
 }
 
 /**

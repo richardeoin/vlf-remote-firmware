@@ -69,10 +69,10 @@ void spi_flush(void) {
 
 void general_spi_init(void) {
   /* Reset the SSP0 peripheral */
-  LPC_SYSCON->PRESETCTRL |= (0x1<<0);
+  LPC_SYSCON->PRESETCTRL |= (1 << 0);
 
   /* Enable the clock to the module */
-  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<11);
+  LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 11);
   LPC_SYSCON->SSP0CLKDIV = 0x01; /* Full 48MHz clock to the module */
 
   /*  SSP I/O configuration */
@@ -92,7 +92,7 @@ void general_spi_init(void) {
   LPC_SPI0->IMSC = SSPIMSC_RORIM | SSPIMSC_RTIM;
 }
 void flash_spi_init(void) {
-  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<11);
+  LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 11);
 
   /* Set DSS data to 8-bit, Frame format SPI, CPOL = 0, CPHA = 0, and SCR is 0 */
   LPC_SPI0->CR0 = 0x0007;
@@ -102,7 +102,7 @@ void flash_spi_init(void) {
   /* This gives a clock rate equal to the AHB Clock (24MHz)*/
 }
 void radio_spi_init(void) {
-  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<11);
+  LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 11);
 
   /* Set DSS data to 8-bit, Frame format SPI, CPOL = 0, CPHA = 0, and SCR is 7 */
   LPC_SPI0->CR0 = 0x0707;
@@ -111,7 +111,7 @@ void radio_spi_init(void) {
   LPC_SPI0->CPSR = 0x4;
 }
 void wm8737_spi_init(void) {
-  LPC_SYSCON->SYSAHBCLKCTRL |= (1<<11);
+  LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 11);
 
   /* Set DSS data to 16-bit, Frame format SPI, CPOL = 1, CPHA = 1, and SCR is 0 */
   LPC_SPI0->CR0 = 0x00CF;
@@ -125,5 +125,5 @@ void wm8737_spi_init(void) {
 }
 void spi_shutdown(void) {
   /* Cutoff power to the module to save power */
-  //LPC_SYSCON->SYSAHBCLKCTRL &= ~(1<<11); // TODO: This breaks things!
+  //LPC_SYSCON->SYSAHBCLKCTRL &= ~(1 << 11); // TODO: This breaks things!
 }

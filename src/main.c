@@ -101,6 +101,8 @@ int main(void) {
   /* Hardware Setup - Don't leave MCLK floating */
   LPC_GPIO0->DIR |= (1 << 1);
 
+  SystemInit();
+
   /* Start the SPI Bus first, that's really important */
   general_spi_init();
 
@@ -108,8 +110,7 @@ int main(void) {
   pwrmon_init();
 
   /* LED */
-  led_init();
-  led_on();
+  LED_ON();
 
   /* Initialise the flash memory first so this gets off the SPI bus */
   flash_spi_init();
@@ -132,7 +133,7 @@ int main(void) {
    * This delay of approximately 5 seconds is so we can
    * re-program the chip before it goes to sleep
    */
-  uint32_t i = 1000*1000*5;
+  uint32_t i = 1000*1000*3;
   while (i-- > 0);
 
   /* Initialise the radio stack */
@@ -208,8 +209,8 @@ void infinite_deep_sleep(void) {
 	}
       } else {
 	has_logged++;
-	led_off();
-      }
+	LED_OFF();
+     }
 
       /* Take a reading */
       do_sampling();
@@ -219,7 +220,7 @@ void infinite_deep_sleep(void) {
       /* Take battery readings */
       do_battery();
     } else { /* Invalid time */
-      led_toggle();
+      LED_TOGGLE();
     }
 
     /* Other tasks */
@@ -244,8 +245,8 @@ void battery_callback(uint16_t adc_value) {
 void do_battery(void) {
   /* Save the summed reading */
   if (battery_acc_counter >= 10) { /* Every 600 seconds (10 minutes) */
-    /* Write to memory */
-    write_sample_to_mem(get_battery_record_flags(), (uint32_t)battery_acc, 0, 300); /* Middle of average is 5 mins ago */
+    /* Write to memory - Middle of average is 5 mins ago */
+    write_sample_to_mem(get_battery_record_flags(), (uint32_t)battery_acc, 0, 300);
     /* Clear the accumulator */
     battery_acc = 0; battery_acc_counter = 0;
   }

@@ -28,7 +28,7 @@
 
 /* CoreDebug registers are not accesible from processor in Cortex-M0 */
 // CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk
-#define DEBUG_ACTIVE()    (1)
+#define DEBUG_ACTIVE()    (0)
 
 void _debug_putchar(char c) {
   if (DEBUG_ACTIVE()) {

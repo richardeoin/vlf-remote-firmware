@@ -33,44 +33,44 @@
 struct radif rf212_radif;
 
 /**
- * The slave select pin   P0[7]
+ * The slave select pin   P1[0]
  */
-#define RF212_SSEL_PORT		LPC_GPIO0
-#define RF212_SSEL_PIN		7
+#define RF212_SSEL_PORT		LPC_GPIO1
+#define RF212_SSEL_PIN		0
 /**
  * The reset pin          P1[2]
  */
 #define RF212_RESET_PORT	LPC_GPIO1
 #define RF212_RESET_PIN		2
 /**
- * The sleep trigger pin  1[11]
+ * The sleep trigger pin  P1[1]
  */
 #define RF212_SLPTR_PORT	LPC_GPIO1
-#define RF212_SLPTR_PIN		11
+#define RF212_SLPTR_PIN		1
 
 /**
  * Slave Select: Active Low
  */
-void rf212_spi_enable() {
+void rf212_spi_enable(void) {
   RF212_SSEL_PORT->MASKED_ACCESS[(1 << RF212_SSEL_PIN)] = 0;
 }
-void rf212_spi_disable() {
+void rf212_spi_disable(void) {
   RF212_SSEL_PORT->MASKED_ACCESS[(1 << RF212_SSEL_PIN)] = (1 << RF212_SSEL_PIN);
 }
 /**
  * Reset: Active Low
  */
-void rf212_reset_enable() {
+void rf212_reset_enable(void) {
   RF212_RESET_PORT->MASKED_ACCESS[(1 << RF212_RESET_PIN)] = 0;
 }
-void rf212_reset_disable() {
+void rf212_reset_disable(void) {
   RF212_RESET_PORT->MASKED_ACCESS[(1 << RF212_RESET_PIN)] = (1 << RF212_RESET_PIN);
 }
 /**
  * Sleep Trigger: Active High
  */
-void rf212_slptr_enable() {
-  RF212_SLPTR_PORT->MASKED_ACCESS[(1 << RF212_SLPTR_PIN)] = (1 << RF212_RESET_PIN);
+void rf212_slptr_enable(void) {
+  RF212_SLPTR_PORT->MASKED_ACCESS[(1 << RF212_SLPTR_PIN)] = (1 << RF212_SLPTR_PIN);
 }
 void rf212_slptr_disable() {
   RF212_SLPTR_PORT->MASKED_ACCESS[(1 << RF212_SLPTR_PIN)] = 0;
@@ -78,12 +78,14 @@ void rf212_slptr_disable() {
 /**
  * A function that sets up the I/O required for the radio.
  */
-void radio_io_init() {
+void radio_io_init(void) {
   /* Configure pins as GPIOs */
-  LPC_IOCON->PIO0_7 &= ~0x7;		/* SSEL   P0[7]		*/
+  LPC_IOCON->R_PIO1_0 &= ~0x7;		/* SSEL   P1[0]		*/
+  LPC_IOCON->R_PIO1_0 |= 0x1;
+  LPC_IOCON->R_PIO1_1 &= ~0x7;		/* SLP_TR P1[1]		*/
+  LPC_IOCON->R_PIO1_1 |= 0x1;
   LPC_IOCON->R_PIO1_2 &= ~0x7;		/* RESET  P1[2]		*/
   LPC_IOCON->R_PIO1_2 |= 0x1;
-  LPC_IOCON->PIO1_11 &= ~0x7;		/* SLP_TR P1[11]	*/
 
   /* Configure GPIOs as outputs */
   RF212_SSEL_PORT->DIR |= 1 << RF212_SSEL_PIN;
@@ -93,10 +95,10 @@ void radio_io_init() {
   /* Keep SSEL low */
   rf212_spi_disable();
 
-  /* The interrupt pin is P1[0]  */
-  LPC_GPIO1->IS &= ~(1 << 0);		/* Edge sensitive		*/
-  LPC_GPIO1->IEV |= (1 << 0);		/* Rising edge 			*/
-  LPC_GPIO1->IE |= (1 << 0);		/* Interrupt enabled		*/
+  /* The interrupt pin is P1[4]  */
+  LPC_GPIO1->IS &= ~(1 << 4);		/* Edge sensitive		*/
+  LPC_GPIO1->IEV |= (1 << 4);		/* Rising edge 			*/
+  LPC_GPIO1->IE |= (1 << 4);		/* Interrupt enabled		*/
 
   NVIC_SetPriority(PIOINT1_IRQn, 1);	/* 2nd Highest Priority interrupt */
   NVIC_ClearPendingIRQ(PIOINT1_IRQn);
@@ -126,9 +128,9 @@ void rf212_exit_protect(void) {
 /**
  * Interrupt Handler
  */
-void PIOINT1_IRQHandler_Radio(void) {
+void PIOINT1_IRQHandler(void) {
   /* Clear the interrupt */
-  LPC_GPIO1->IC |= (1 << 0);
+  LPC_GPIO1->IC |= (1 << 4);
   
   at86rf212_interrupt(&rf212_radif);
 }
@@ -185,8 +187,8 @@ void radio_init(rx_callback_func callback) {
   /* Initialise the radio */
   while (at86rf212_reset(&rf212_radif) != RADIO_SUCCESS);
 
-  /* Modulation: 20kbit/s */
-  at86rf212_set_modulation(RADIF_OQPSK_400KCHIPS_100KBITS_S, &rf212_radif);
+  /* Modulation: 200kbit/s */
+  at86rf212_set_modulation(RADIF_OQPSK_400KCHIPS_200KBITS_S, &rf212_radif);
   
   /* Frequency: 868.3 MHz  */
   at86rf212_set_freq(8683, &rf212_radif);
@@ -194,8 +196,8 @@ void radio_init(rx_callback_func callback) {
   /* Power: +5dBm, EU2 profile */
   at86rf212_set_power(0xe8, &rf212_radif);
 
-  /* PAN ID: 0x0567; Short Address: 0x0567 */
-  at86rf212_set_address(0x0567, 0x0567, &rf212_radif);
+  /* PAN ID: 0x1234; Short Address: 0x0002 */
+  at86rf212_set_address(0x1234, 0x0002, &rf212_radif);
 
   /* Make the radio interface operational */
   at86rf212_startup(&rf212_radif);

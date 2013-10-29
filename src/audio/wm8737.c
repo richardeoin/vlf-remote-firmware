@@ -29,6 +29,13 @@
 #include "debug.h"
 
 /**
+ * VMID Enable: P0[7]
+ */
+#define VMID_INIT()	do { LPC_GPIO0->DIR |= (1<<7); LPC_GPIO0->MASKED_ACCESS[1<<7] = 0; } while (0);
+#define VMID_ON()	LPC_GPIO0->MASKED_ACCESS[1<<7] = (1<<7);
+#define VMID_OFF()	LPC_GPIO0->MASKED_ACCESS[1<<7] = 0;
+
+/**
  * See the part datasheet at:
  * http://www.wolfsonmicro.com/documents/uploads/data_sheets/en/WM8737.pdf, Revision 4.3
  */
@@ -46,14 +53,17 @@ int32_t wm8737_init(void) {
 
   /* ---- ADC Setup ---- */
 
-  /* Bypass the 3D enhancement filter so we can hit 96kHz sample rate.
-   * See Page 21 of the datasheet for reference. */
+  /**
+   * Bypass the 3D enhancement filter so we can hit 96kHz sample rate.
+   * See Page 21 of the datasheet for reference.
+   */
   WriteI2C(WM_ALC1);
   WriteI2C(WM_ALC3);
   WriteI2C(WM_3D_ENHANCE);
   /* More magic to support 96kHz */
   WriteI2C(WM_ALC2 | 0x1C0); /* 1_110x_xxxx */
-  WriteI2C((0x1C << 9) | 0x4); /* Totally unsupported register here. I wonder what other magical things are up there.. */
+  /* Totally unsupported register here. I wonder what other magical things are up there.. */
+  WriteI2C((0x1C << 9) | 0x4);
 
   /* fs = 96kHz from MCLK = 12MHz */
   WriteI2C(WM_CLOCKING | CLOCKING_USB | CLOCKING_SR_USB_96000HZ);
@@ -79,6 +89,9 @@ int32_t wm8737_init(void) {
   WriteI2C(WM_BIAS_CTRL | VMID_300000_OMHS | BIAS_LEFT_ENABLE | BIAS_RIGHT_ENABLE);
 
   WaitForI2C();
+
+  VMID_INIT();
+  VMID_ON();
 
   /* Put the interface on standby */
   wm8737_power_standby();
@@ -112,11 +125,11 @@ void wm8737_clock_off(void) {
  * TODO: VMID impedance.
  */
 void wm8737_power_standby(void) {
-  WriteI2C(WM_POWER_CTRL | POWER_VMID | POWER_VREF);
+  WriteI2C(WM_POWER_CTRL);
   WaitForI2C();
 }
 void wm8737_power_on(void) {
-  WriteI2C(WM_POWER_CTRL | POWER_VMID | POWER_VREF | POWER_AUDIO_INTERFACE |
+  WriteI2C(WM_POWER_CTRL | POWER_AUDIO_INTERFACE | POWER_VMID | POWER_VREF |
 	   POWER_PGA_LEFT | POWER_PGA_RIGHT | POWER_ADC_LEFT | POWER_ADC_RIGHT);
   WaitForI2C();
 }

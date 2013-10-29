@@ -172,6 +172,14 @@ void SystemInit (void)
    */
   InitExternalOscillator();
 
+  /**
+   * Initialise the PLL to double the 12MHz crystal frequency to
+   * 24MHz. But don't bother waiting for it to lock, we only use it
+   * when processing, not for startup.
+   */
+  LPC_SYSCON->SYSPLLCTRL = 0x00000041;
+  LPC_SYSCON->PDRUNCFG &= ~(1 << 7);
+
   /* Enable the clock to the I/O Configuration Block */
   LPC_SYSCON->SYSAHBCLKCTRL |= (1 << 16);
 }

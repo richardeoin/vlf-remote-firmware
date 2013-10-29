@@ -28,6 +28,8 @@
 #include "console.h"
 #include "timing.h"
 
+#undef FAKE_SLEEP
+
 #ifdef FAKE_SLEEP
 volatile uint8_t asleep;
 #endif
@@ -94,7 +96,10 @@ void configure_calibration(void) {
   LPC_SYSCON->WDTCLKSEL = WATCHDOG_OSC_CLKSEL; /* Watchdog runs from watchdog oscillator */
   LPC_SYSCON->WDTCLKUEN = 0;
   LPC_SYSCON->WDTCLKUEN = 1;
-  /* Watchdog Timer Constant - This is the value the watchdog starts from every time it's fed */
+  /**
+   * Watchdog Timer Constant - This is the value the watchdog starts
+   * from every time it's fed.
+   */
   LPC_WDT->TC = 0xFFFFFF;
   /* Watchdog configured to run, clock source locked. Timeout does *not* cause chip reset */
   LPC_WDT->MOD = 0x1;
@@ -171,7 +176,10 @@ void init_tmr32b0(void) {
 void setup_tmr32b0_wakeup_timer(uint32_t wakeup_delay_halfseconds) {
   LPC_CT32B0->TCR = 0x2;
 
-  /* Load MR2 with the value from the calibration (multiplied to give the correct sleep time) */
+  /**
+   * Load MR2 with the value from the calibration (multiplied to give
+   * the correct sleep time)
+   */
   LPC_CT32B0->MR2 = (calibration_value - WOSC_WAKE_LATENCY) * wakeup_delay_halfseconds;
   LPC_CT32B0->PR = 0; /* No prescaler */
 

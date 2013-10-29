@@ -27,7 +27,7 @@
 
 #include "radif.h"
 
-#define BASE_STATION_ADDR 0x0567
+#define BASE_STATION_ADDR 0x0001
 
 void radio_init(rx_callback_func callback);
 void radio_transmit(uint8_t* data, uint8_t length, uint16_t destination,

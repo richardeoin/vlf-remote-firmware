@@ -1,5 +1,5 @@
 /* 
- * Functions for controlling the LED
+ * Macros for controlling the LED
  * Copyright (C) 2013  Richard Meadows
  * 
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -19,15 +19,18 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
  * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * WITH T5BHE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #ifndef LED_H
 #define LED_H
 
-void led_on(void);
-void led_off(void);
-void led_toggle(void);
-void led_init(void);
+/**
+ * LED on P3[2]
+ */
+
+#define LED_ON()	do { LPC_GPIO3->DIR |= (1<<2); LPC_GPIO3->MASKED_ACCESS[1<<2] = 0; } while (0);
+#define LED_OFF()	LPC_GPIO3->DIR &= ~(1<<2);
+#define LED_TOGGLE()	do { if (LPC_GPIO3->DIR & (1<<2)) { LED_OFF(); } else { LED_ON(); } } while (0);
 
 #endif /* LED_H */
