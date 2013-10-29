@@ -14,7 +14,9 @@ No license given, just authorship details. Retreived from
 
 ********************************
 Written by:  Tom Roberts  11/8/89
+
 Made portable:  Malcolm Slaney 12/15/94 malcolm@interval.com
+
 Enhanced:  Dimitrios P. Bouras  14 Jun 2006 dbouras@ieee.org
 ********************************
 
